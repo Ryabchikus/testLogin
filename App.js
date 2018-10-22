@@ -1,19 +1,17 @@
 'use strict';
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
+/* @flow */
 
 import React, { Component } from 'react';
-import LoginScreen from './src/components/loginScreen';
+import { Provider } from 'react-redux';
+import configureStore from './src/stores/configureStore';
+import LoginScreenContainer from './src/containers/loginScreenContainer';
 
-export default class App extends Component<Props> {
+export default class App extends Component {
   render() {
     return (
-      <LoginScreen />
+      <Provider store={configureStore}>
+        <LoginScreenContainer />
+      </Provider>
     );
   }
 }

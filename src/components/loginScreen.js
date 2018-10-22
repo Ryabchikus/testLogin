@@ -1,14 +1,9 @@
 'use strict';
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
+/* @flow */
 
 import React, { Component } from 'react';
 import {
+  Alert,
   ActivityIndicator,
   StyleSheet,
   Text,
@@ -18,26 +13,35 @@ import {
 } from 'react-native';
 
 import {
-  Icon,
   Button,
 } from 'native-base';
 
 import SvgUri from 'react-native-svg-uri';
 
+const loginImage = require('../../resources/loginScreen.svg');
 
-class LoginScreen extends Component<> {
+class LoginScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      login: '',
+      login: this.props.login || '',
       password: '',
-
-      isAuntificationSubmit: false,
+      auntificationDataIncorrect: false,
     };
   };
 
+  isEmptyObject(obj) {
+    for (var i in obj) {
+      if (obj.hasOwnProperty(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  //-------------------------------------- input handlers ---------------------------------------
+
   onLoginChanged = (event) => {
-    //console.log(`Current login: ${event.nativeEvent.text}`);
     this.setState({ login: event.nativeEvent.text });
   }
 
@@ -46,34 +50,84 @@ class LoginScreen extends Component<> {
   }
 
   onLoginPressed = () => {
-    this.setState({ isAuntificationSubmit: true });
+    if (this.state.login.trim().length <= 3 || this.state.password.trim().length <= 3) {
+      this.setState({ auntificationDataIncorrect: true });
+    } else {
+      this.props.actions.updateLogin(this.state.login);
+      let authObject = JSON.stringify({
+        login: this.state.login,
+        password: this.state.password
+      });
+      this.props.actions.requestAuntification(authObject);
+    }
   }
 
+  //------------------------------------ rendering functions ------------------------------------
+
   renderLoginButton() {
-    let disabledState = this.state.isAuntificationSubmit
-    let text = this.state.isAuntificationSubmit ? null : <Text style={styles.buttonText}>Войти</Text>;
-    let spinner = this.state.isAuntificationSubmit ? <ActivityIndicator size='small' style={{ flex: 1, alignSelf: 'center' }} /> : null;
-    let buttonStyle = this.state.isAuntificationSubmit ? styles.buttonDisabled : styles.button;
+    let disabledState = this.props.loading
+    let text = this.props.loading ? null : <Text style={styles.buttonText}>Войти</Text>;
+    let spinner = this.props.loading ? <ActivityIndicator size='small' style={{ flex: 1, alignSelf: 'center' }} /> : null;
+    let buttonStyle = this.props.loading ? styles.buttonDisabled : styles.button;
     return (
       <Button
-      rounded
-      block
-      disabled={disabledState}
-      style={buttonStyle}
-      onPress={this.onLoginPressed}>
-      {spinner}
-      {text}
-    </Button>
-)
+        rounded
+        block
+        disabled={disabledState}
+        style={buttonStyle}
+        onPress={this.onLoginPressed}>
+        {spinner}
+        {text}
+      </Button>
+    );
+  }
+
+  renderErrorMessageAlert() {
+    Alert.alert(
+      'Network error',
+      `\n\rError status: ${this.props.error.status} 
+      \n\rError data: ${this.props.error.data}`,
+      [
+        { text: 'Reload', onPress: () => this.onLoginPressed() },
+        { text: 'OK', onPress: () => this.props.actions.auntificationStatusReset() },
+      ]
+    );
+  }
+
+  renderServerDataAlert() {
+    Alert.alert(
+      'Server data',
+      `Server data is: ${JSON.stringify(this.props.data)}`,
+      [
+        { text: 'OK', onPress: () => this.props.actions.auntificationStatusReset() },
+      ]
+    );
+  }
+
+  renderIncorrectAuthDataAlert() {
+    Alert.alert(
+      'Incorrect data!',
+      `Please, check your login and password and try again`,
+      [
+        { text: 'OK', onPress: () => this.setState({ auntificationDataIncorrect: false }) },
+      ]
+    );
   }
 
   render() {
 
+    const errorMessageAlert = this.props.auntificationError ? this.renderErrorMessageAlert() : null;
+    const serverDataAlert = (!this.props.auntificationError && !this.isEmptyObject(this.props.data)) ? this.renderServerDataAlert() : null;
+    const incorrectAuthDataAlert = this.state.auntificationDataIncorrect ? this.renderIncorrectAuthDataAlert() : null;
+
     return (
       <View style={styles.content}>
+        {errorMessageAlert}
+        {serverDataAlert}
+        {incorrectAuthDataAlert}
         <View style={styles.imageContainer}>
           <SvgUri
-            source={require('../../resources/loginScreen.svg')}
+            source={loginImage}
             style={styles.image}
             width='200'
             height='200'
@@ -132,12 +186,10 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginTop: 30,
     alignSelf: 'center',
-    //backgroundColor: 'green',
   },
 
   loginContainer: {
     padding: 15,
-    //backgroundColor: 'yellow',
   },
 
   footerContainer: {
@@ -198,4 +250,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default LoginScreen
